@@ -63,6 +63,24 @@ $err_msg = "<ul class=\"errors\">\n";
     return $err_msg;
     }
 
+    function updateStatusToDone($id)
+    {
+        $dbh = connectDb();
+
+        $sql = <<<EOM
+    UPDATE
+        tasks
+    SET
+        status = 'done'
+    WHERE
+        id = :id
+    EOM;
+
+    $stmt = $dbh->prepare($sql);
+    $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+    $stmt->execute();
+    }
+
 function findtaskBystatus($status)
 {
     $dbh = connectDb();
@@ -78,9 +96,6 @@ function findtaskBystatus($status)
 
     // プリペアー度ステイトメントの準備
     $stmt = $dbh->prepare($sql);
-
-    // バインドするパラメータの準備
-    $status = 'notyet';
 
     // パラメータのバインド
     $stmt->bindParam(':status', $status, PDO::PARAM_STR);
