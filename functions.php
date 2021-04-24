@@ -2,10 +2,11 @@
 
 require_once __DIR__ . '/config.php';
 
+// 接続処理を行う関数
 function connectDb()
 {
     try {
-        return new PDO (
+        return new PDO(
             DSN,
             USER,
             PASSWORD,
@@ -18,56 +19,62 @@ function connectDb()
     }
 }
 
+// エスケープ処理を行う関数
 function h($str)
 {
     return htmlspecialchars($str, ENT_QUOTES, 'UTF-8');
 }
 
+// タスク登録時のバリデーション
 function insertValidate($title)
 {
     $errors = [];
 
-    if($title == '') {
+    if ($title == '') {
         $errors[] = MSG_TITLE_REQUIRED;
     }
+
     return $errors;
 }
 
+// タスク登録
 function insertTask($title)
 {
-    try {
-        $dbh = connectDb();
-        $sql = <<<EOM
-        INSERT INTO
-            tasks
-            (title)
-        VALUES
-            (:title);
-        EOM;
-        $stmt = $dbh->prepare($sql);
-        $stmt->bindParam(':title', $title, PDO::PARAM_STR);
-        $stmt->execute();
-    } catch (PDOException $e) {
-        echo $e->getMessage();
-    }
+    $dbh = connectDb();
+
+    $sql = <<<EOM
+    INSERT INTO
+        tasks
+        (title)
+    VALUES
+        (:title)
+    EOM;
+
+    $stmt = $dbh->prepare($sql);
+    $stmt->bindParam(':title', $title, PDO::PARAM_STR);
+    $stmt->execute();
 }
 
+// エラーメッセージ作成
 function createErrMsg($errors)
 {
-$err_msg = "<ul class=\"errors\">\n";
+    $err_msg = "<ul class=\"errors\">\n";
 
     foreach ($errors as $error) {
         $err_msg .= "<li>" . h($error) . "</li>\n";
     }
+
     $err_msg .= "</ul>\n";
+
     return $err_msg;
-    }
+}
 
-    function updateStatusToDone($id)
-    {
-        $dbh = connectDb();
+// タスク完了
+function updateStatusToDone($id)
+{
+    $dbh = connectDb();
 
-        $sql = <<<EOM
+    $sql = <<<EOM
     UPDATE
         tasks
     SET
@@ -79,30 +86,98 @@ $err_msg = "<ul class=\"errors\">\n";
     $stmt = $dbh->prepare($sql);
     $stmt->bindParam(':id', $id, PDO::PARAM_INT);
     $stmt->execute();
-    }
+}
 
-function findtaskBystatus($status)
+// status に応じてレコードを取得
+function findTaskByStatus($status)
 {
     $dbh = connectDb();
 
     $sql = <<<EOM
     SELECT
-        *
-    FROM
+        * 
+    FROM 
         tasks
-    WHERE
+    WHERE 
         status = :status;
     EOM;
 
-    // プリペアー度ステイトメントの準備
     $stmt = $dbh->prepare($sql);
-
-    // パラメータのバインド
     $stmt->bindParam(':status', $status, PDO::PARAM_STR);
-
-    // プリペアドステートメントの実行
     $stmt->execute();
 
-    // 結果の取得
     return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// 受け取った id のレコードを取得
+function findById($id)
+{
+    $dbh = connectDb();
+
+    $sql = <<<EOM
+    SELECT
+        * 
+    FROM 
+        tasks
+    WHERE 
+        id = :id;
+    EOM;
+
+    $stmt = $dbh->prepare($sql);
+    $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+    $stmt->execute();
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+// タスク更新時のバリデーション
+function updateValidate($title, $task)
+{
+    $errors = [];
+
+    if ($title == '') {
+        $errors[] = MSG_TITLE_REQUIRED;
+    }
+
+    if ($title == $task['title']) {
+        $errors[] = MSG_TITLE_NO_CHANGE;
+    }
+
+    return $errors;
+}
+
+// タスク更新
+function updateTask($id, $title)
+{
+    $dbh = connectDb();
+
+    $sql = <<<EOM
+    UPDATE
+        tasks
+    SET
+        title = :title
+    WHERE
+        id = :id
+    EOM;
+
+    $stmt = $dbh->prepare($sql);
+    $stmt->bindParam(':title', $title, PDO::PARAM_STR);
+    $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+    $stmt->execute();
+}
+
+// タスク削除
+function deleteTask($id)
+{
+    $dbh = connectDb();
+
+    $sql = <<<EOM
+    DELETE FROM
+        tasks
+    WHERE
+        id = :id
+    EOM;
+
+    $stmt = $dbh->prepare($sql);
+    $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+    $stmt->execute();
 }
